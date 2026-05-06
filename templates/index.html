@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-TIVE</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #333; scroll-behavior: smooth; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); width: 95%; max-width: 1000px; }
+        h2 { margin-top: 0; color: #1a73e8; font-size: 24px; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; margin-bottom: 25px; }
+
+        .config-row { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 15px; flex-wrap: wrap; }
+        .col-depto { flex: 1; min-width: 250px; } 
+        .col-pregunta { flex: 3; min-width: 450px; }
+
+        .label-title { font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #5f6368; display: block; }
+
+        .search-box { 
+            width: 100%; padding: 14px 16px; border-radius: 8px; border: 2px solid #1a73e8; 
+            font-size: 15px; box-sizing: border-box; background: #fff;
+        }
+
+        .opciones-placa { 
+            background: #f8f9fa; padding: 12px 15px; border-radius: 8px; 
+            border: 1px solid #dadce0;
+        }
+        .radio-group { display: flex; gap: 15px; justify-content: space-around; }
+        .radio-item { 
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; 
+            cursor: pointer; font-size: 13px; background: white; padding: 10px 5px; 
+            border-radius: 6px; border: 1px solid #dee2e6; font-weight: 500;
+        }
+
+/* Contenedores de pestañas */
+.tabs-container { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-end; 
+    padding: 0 5px; /* Ajuste fino lateral */
+}
+
+.header-buttons-left { display: flex; gap: 4px; }
+
+.btn-tab { 
+    border: none; 
+    padding: 8px 16px; 
+    font-size: 12px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    color: white; 
+    text-decoration: none; 
+    display: inline-flex; 
+    align-items: center; 
+    transition: filter 0.2s;
+}
+
+/* Unión Superior: Se apoya sobre el borde del textarea */
+.tabs-top .btn-tab { 
+    border-radius: 8px 8px 0 0; 
+    margin-bottom: -2px; /* Elimina el espacio con el borde negro */
+    position: relative;
+    z-index: 3;
+}
+
+/* Unión Inferior: Sube para tapar el borde inferior del textarea */
+.tabs-bottom { 
+    margin-top: -2px; /* Ajuste para pegar perfectamente abajo */
+    position: relative;
+    z-index: 3;
+}
+
+.tabs-bottom .btn-tab { 
+    border-radius: 0 0 8px 8px; 
+}
+
+/* Caja de Texto: El corazón del diseño */
+textarea { 
+            width: 100%; 
+            height: 260px; 
+            padding: 15px; 
+            /* --- CAMBIO AQUÍ: Borde fino y suave --- */
+            border: 1px solid #dadce0; 
+            /* Bordes redondeados uniformes para suavidad */
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-family: 'Consolas', monospace; 
+            font-size: 14px; 
+            display: block; 
+            line-height: 1.6; 
+            outline: none; 
+            position: relative; 
+            z-index: 2;
+            background: white;
+            /* Opcional: una sombra muy tenue para dar profundidad */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+/* Colores de tus botones */
+.btn-copy { background: #6f42c1; } 
+.btn-follow { background: #007bff; } 
+.btn-ia { background: #e91e63; } 
+.btn-clear-mini { background: #f2994a; }
+
+        .buttons { display: flex; gap: 15px; }
+        button.main-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        
+        .btn-preview { background: #1a73e8; color: white; }
+        .btn-preview:disabled { background: #bdc1c6; cursor: not-allowed; }
+        .btn-download { background: #34a853; color: white; }
+        
+        .preview-area { margin-top: 30px; text-align: center; border-top: 2px solid #f1f3f4; padding-top: 25px; }
+        .preview-area img { max-width: 100%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        #btnTop {
+            display: none; position: fixed; bottom: 30px; right: 30px; z-index: 99; 
+            border: none; outline: none; background-color: #1a73e8; color: white; 
+            cursor: pointer; padding: 15px; border-radius: 50%; font-size: 20px;
+            width: 50px; height: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<button onclick="topFunction()" id="btnTop" title="Ir arriba">▲</button>
+
+<div class="container">
+    <h2>📝 Panel de Generación TIVE</h2>
+
+    <form method="POST" id="mainForm" enctype="multipart/form-data">
+<div class="config-row">
+            <div class="col-depto">
+                <label class="label-title">📍 Sede Registral:</label>
+                <input list="deptos" id="depto_input" class="search-box" placeholder="Sede..." value="{{ depto_previo }}" autocomplete="off" onfocus="this.select()" style="margin-bottom: 10px;">
+                
+                <div class="opciones-placa" style="padding: 5px; width: fit-content;">
+                    <div class="radio-group" style="gap: 10px;">
+                        <span style="font-size: 11px; font-weight: bold; color: #5f6368; align-self: center; margin-left: 5px;">¿EDITAR AZURA?</span>
+                        <label class="radio-item" style="padding: 5px 10px; flex: none;"><input type="radio" name="edit_az" value="NO" checked onclick="toggleAzura()"> NO</label>
+                        <label class="radio-item" style="padding: 5px 10px; flex: none;"><input type="radio" name="edit_az" value="SI" onclick="toggleAzura()"> SI</label>
+                    </div>
+                </div>
+
+                <datalist id="deptos">
+                    <option value="ABANCAY"> <option value="ANDAHUAYLAS"> <option value="AREQUIPA">
+                    <option value="AYACUCHO"> <option value="BAGUA"> <option value="BARRANCA">
+                    <option value="CAJAMARCA"> <option value="CALLAO"> <option value="CAMANA">
+                    <option value="CASMA"> <option value="CASTILLA APLAO"> <option value="CAÑETE">
+                    <option value="CHACHAPOYAS"> <option value="CHEPEN"> <option value="CHICLAYO">
+                    <option value="CHIMBOTE"> <option value="CHINCHA"> <option value="CHOTA">
+                    <option value="CUSCO"> <option value="ESPINAR"> <option value="HUACHO">
+                    <option value="HUAMACHUCO"> <option value="HUANCAVELICA"> <option value="HUANCAYO">
+                    <option value="HUANTA"> <option value="HUANUCO"> <option value="HUARAL">
+                    <option value="HUARAZ"> <option value="ICA"> <option value="ILO">
+                    <option value="ISLAY MOLLENDO"> <option value="JAEN"> <option value="JUANJUI">
+                    <option value="JULIACA"> <option value="LA MERCED (SELVA CENTRAL)"> <option value="LIMA">
+                    <option value="MADRE DE DIOS"> <option value="MAYNAS"> <option value="MOQUEGUA">
+                    <option value="MOYOBAMBA"> <option value="NAZCA"> <option value="OTUZCO">
+                    <option value="PASCO"> <option value="PISCO"> <option value="PIURA">
+                    <option value="PUCALLPA"> <option value="PUNO"> <option value="QUILLABAMBA">
+                    <option value="SAN PEDRO"> <option value="SATIPO"> <option value="SICUANI">
+                    <option value="SULLANA"> <option value="TACNA"> <option value="TARAPOTO">
+                    <option value="TARMA"> <option value="TINGO MARIA"> <option value="TRUJILLO">
+                    <option value="TUMBES"> <option value="YURIMAGUAS">
+                </datalist>
+            </div>
+
+            <div class="col-pregunta">
+                <label class="label-title">❓ ¿En qué lado está el guion de la placa?</label>
+                <div class="opciones-placa">
+                    <div class="radio-group">
+                        <label class="radio-item"><input type="radio" name="pos_guion" value="izq" id="g_izq" {% if pos_guion == 'izq' %}checked{% endif %}> Izquierdo (AB-1234)</label>
+                        <label class="radio-item"><input type="radio" name="pos_guion" value="cen" id="g_cen" {% if pos_guion == 'cen' or not pos_guion %}checked{% endif %}> Central (ABC-123)</label>
+                        <label class="radio-item"><input type="radio" name="pos_guion" value="der" id="g_der" {% if pos_guion == 'der' %}checked{% endif %}> Derecho (1234-AB)</label>
+                    </div>
+                </div>
+
+                <div id="row_azura" style="display: none; gap: 10px; margin-top: 10px;">
+                    <input type="text" id="azura_verif" class="search-box" style="flex: 1; padding: 10px; font-size: 14px; text-align: center; border-radius: 20px;" placeholder="Verificación">
+                    <input type="text" id="azura_fecha" class="search-box" style="flex: 1; padding: 10px; font-size: 14px; text-align: center; border-radius: 20px;" placeholder="Fecha">
+                    <input type="text" id="azura_tarjeta" class="search-box" style="flex: 1; padding: 10px; font-size: 14px; text-align: center; border-radius: 20px;" placeholder="N° Tarjeta">
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs-container tabs-top">
+            <div class="header-buttons-left">
+                <a href="https://gemini.google.com/app/79e16670844df0d2?hl=es" target="_blank" class="btn-tab btn-copy">✨ Gemini</a>
+                <a href="https://www.kimi.com/chat/19d73f72-1332-80fc-8000-090b47082233?chat_enter_method=history" target="_blank" class="btn-tab btn-follow">✨ Kimi</a>
+                <a href="https://chat.mistral.ai/chat/4e58a83d-00e0-4775-a698-ca5ef0b1140d" target="_blank" class="btn-tab btn-ia">✨ Mistral</a>
+            </div>
+            <button type="button" class="btn-tab btn-clear-mini" onclick="limpiarFormulario()">🧹 Limpiar Todo</button>
+        </div>
+
+        <textarea name="texto_datos" id="texto_datos" placeholder="Pegue la información aquí...">{{ texto }}</textarea>
+
+        <div class="tabs-container tabs-bottom">
+            <div class="header-buttons-left">
+                <a href="https://consultavehicular.sunarp.gob.pe/" target="_blank" class="btn-tab btn-follow">🔍Consulta Veh.</a>
+                <a href="https://copialiteral-altoque.sunarp.gob.pe/" target="_blank" class="btn-tab btn-copy">📄 Copia Literal</a>
+                <a href="https://sprl.sunarp.gob.pe/sprl/main/partidas-base-grafica-registral" target="_blank" class="btn-tab btn-copy">📄 Registros Sunarp</a>
+                <a href="https://siguelo.sunarp.gob.pe/siguelo/titulo" target="_blank" class="btn-tab btn-ia">🔗 Síguelo</a>
+            </div>
+        </div>
+        <input type="hidden" name="depto_nombre" id="depto_nombre" value="{{ depto_previo }}">
+
+
+        <br>
+        
+        <div class="buttons">
+
+            <button type="button" id="btn_preview" onclick="actualizarDatosYEnviar('preview', event)" class="main-btn btn-preview" disabled>🔍 Generar Vista Previa</button>
+            <button type="button" id="btnDescargar" onclick="actualizarDatosYEnviar('download', event)" class="main-btn btn-download">📥 Descargar PDF</button>
+        </div>
+    </form>
+
+    {% if imagen_preview %}
+    <div class="preview-area" id="preview_section">
+        <h3>🖼️ Vista Previa Generada:</h3>
+        <img src="data:image/jpeg;base64,{{ imagen_preview }}" alt="Preview">
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// --- LÓGICA DE BOTONES Y FORMULARIO ---
+const datosDeptos = {
+    "PIURA": { zona: "ZONA REGISTRAL Nº I", sede: "SEDE REGISTRAL - PIURA", foto: "piura" },
+    "SULLANA": { zona: "ZONA REGISTRAL Nº I", sede: "SEDE REGISTRAL - SULLANA", foto: "sullana" },
+    "TUMBES": { zona: "ZONA REGISTRAL Nº I", sede: "SEDE REGISTRAL - TUMBES", foto: "tumbes" },
+    "CHICLAYO": { zona: "ZONA REGISTRAL Nº II", sede: "SEDE REGISTRAL - CHICLAYO", foto: "chiclayo" },
+    "CAJAMARCA": { zona: "ZONA REGISTRAL Nº II", sede: "SEDE REGISTRAL - CAJAMARCA", foto: "cajamarca" },
+    "BAGUA": { zona: "ZONA REGISTRAL Nº II", sede: "SEDE REGISTRAL - BAGUA", foto: "bagua" },
+    "CHACHAPOYAS": { zona: "ZONA REGISTRAL Nº II", sede: "SEDE REGISTRAL - CHACHAPOYAS", foto: "chachapoyas" },
+    "JAEN": { zona: "ZONA REGISTRAL Nº II", sede: "SEDE REGISTRAL - JAEN", foto: "jaen" },
+    "MOYOBAMBA": { zona: "ZONA REGISTRAL Nº III", sede: "SEDE REGISTRAL - MOYOBAMBA", foto: "moyobamba" },
+    "JUANJUI": { zona: "ZONA REGISTRAL Nº III", sede: "SEDE REGISTRAL - JUANJUI", foto: "juanjui" },
+    "TARAPOTO": { zona: "ZONA REGISTRAL Nº III", sede: "SEDE REGISTRAL - TARAPOTO", foto: "tarapoto" },
+    "YURIMAGUAS": { zona: "ZONA REGISTRAL Nº III", sede: "SEDE REGISTRAL - YURIMAGUAS", foto: "yurimaguas" },
+    "MAYNAS": { zona: "ZONA REGISTRAL Nº IV", sede: "SEDE REGISTRAL - MAYNAS", foto: "maynas" },
+    "TRUJILLO": { zona: "ZONA REGISTRAL Nº V", sede: "SEDE REGISTRAL - TRUJILLO", foto: "trujillo" },
+    "CHEPEN": { zona: "ZONA REGISTRAL Nº V", sede: "SEDE REGISTRAL - CHEPEN", foto: "chepen" },
+    "HUAMACHUCO": { zona: "ZONA REGISTRAL Nº V", sede: "SEDE REGISTRAL - HUAMACHUCO", foto: "huamachuco" },
+    "OTUZCO": { zona: "ZONA REGISTRAL Nº V", sede: "SEDE REGISTRAL - OTUZCO", foto: "otuzco" },
+    "SAN PEDRO": { zona: "ZONA REGISTRAL Nº V", sede: "SEDE REGISTRAL - SAN PEDRO", foto: "sanpedro" },
+    "PUCALLPA": { zona: "ZONA REGISTRAL Nº VI", sede: "SEDE REGISTRAL - PUCALLPA", foto: "pucallpa" },
+    "HUARAZ": { zona: "ZONA REGISTRAL Nº VII", sede: "SEDE REGISTRAL - HUARAZ", foto: "huaraz" },
+    "CASMA": { zona: "ZONA REGISTRAL Nº VII", sede: "SEDE REGISTRAL - CASMA", foto: "casma" },
+    "CHIMBOTE": { zona: "ZONA REGISTRAL Nº VII", sede: "SEDE REGISTRAL - CHIMBOTE", foto: "chimbote" },
+    "HUANCAYO": { zona: "ZONA REGISTRAL Nº VIII", sede: "SEDE REGISTRAL - HUANCAYO", foto: "huancayo" },
+    "HUANUCO": { zona: "ZONA REGISTRAL Nº VIII", sede: "SEDE REGISTRAL - HUANUCO", foto: "huanuco" },
+    "PASCO": { zona: "ZONA REGISTRAL Nº VIII", sede: "SEDE REGISTRAL - PASCO", foto: "pasco" },
+    "HUANCAVELICA": { zona: "ZONA REGISTRAL Nº VIII", sede: "SEDE REGISTRAL - HUANCAVELICA", foto: "huancavelica" },
+    "TINGO MARIA": { zona: "ZONA REGISTRAL Nº VIII", sede: "SEDE REGISTRAL - TINGO MARIA", foto: "tingomaria" },
+    "LA MERCED (SELVA CENTRAL)": { zona: "ZONA REGISTRAL Nº VIII", sede: "SEDE REGISTRAL - LA MERCED (SELVA CENTRAL)", foto: "lamerced" },
+    "SATIPO": { zona: "ZONA REGISTRAL Nº VIII", sede: "SEDE REGISTRAL - SATIPO", foto: "satipo" },
+    "TARMA": { zona: "ZONA REGISTRAL Nº VIII", sede: "SEDE REGISTRAL - TARMA", foto: "tarma" },
+    "LIMA": { zona: "ZONA REGISTRAL Nº IX", sede: "SEDE REGISTRAL - LIMA", foto: "lima" },
+    "BARRANCA": { zona: "ZONA REGISTRAL Nº IX", sede: "SEDE REGISTRAL - BARRANCA", foto: "barranca" },
+    "CALLAO": { zona: "ZONA REGISTRAL Nº IX", sede: "SEDE REGISTRAL - CALLAO", foto: "callao" },
+    "CAÑETE": { zona: "ZONA REGISTRAL Nº IX", sede: "SEDE REGISTRAL - CAÑETE", foto: "canete" },
+    "HUACHO": { zona: "ZONA REGISTRAL Nº IX", sede: "SEDE REGISTRAL - HUACHO", foto: "huacho" },
+    "HUARAL": { zona: "ZONA REGISTRAL Nº IX", sede: "SEDE REGISTRAL - HUARAL", foto: "huaral" },
+    "CUSCO": { zona: "ZONA REGISTRAL Nº X", sede: "SEDE REGISTRAL - CUSCO", foto: "cusco" },
+    "ABANCAY": { zona: "ZONA REGISTRAL Nº X", sede: "SEDE REGISTRAL - ABANCAY", foto: "abancay" },
+    "ANDAHUAYLAS": { zona: "ZONA REGISTRAL Nº X", sede: "SEDE REGISTRAL - ANDAHUAYLAS", foto: "andahuaylas" },
+    "ESPINAR": { zona: "ZONA REGISTRAL Nº X", sede: "SEDE REGISTRAL - ESPINAR", foto: "espinar" },
+    "MADRE DE DIOS": { zona: "ZONA REGISTRAL Nº X", sede: "SEDE REGISTRAL - MADRE DE DIOS", foto: "madrededios" },
+    "QUILLABAMBA": { zona: "ZONA REGISTRAL Nº X", sede: "SEDE REGISTRAL - QUILLABAMBA", foto: "quillabamba" },
+    "SICUANI": { zona: "ZONA REGISTRAL Nº X", sede: "SEDE REGISTRAL - SICUANI", foto: "sicuani" },
+    "ICA": { zona: "ZONA REGISTRAL Nº XI", sede: "SEDE REGISTRAL - ICA", foto: "ica" },
+    "AYACUCHO": { zona: "ZONA REGISTRAL Nº XI", sede: "SEDE REGISTRAL - AYACUCHO", foto: "ayacucho" },
+    "CHINCHA": { zona: "ZONA REGISTRAL Nº XI", sede: "SEDE REGISTRAL - CHINCHA", foto: "chincha" },
+    "HUANTA": { zona: "ZONA REGISTRAL Nº XI", sede: "SEDE REGISTRAL - HUANTA", foto: "huanta" },
+    "NAZCA": { zona: "ZONA REGISTRAL Nº XI", sede: "SEDE REGISTRAL - NAZCA", foto: "nazca" },
+    "PISCO": { zona: "ZONA REGISTRAL Nº XI", sede: "SEDE REGISTRAL - PISCO", foto: "pisco" },
+    "AREQUIPA": { zona: "ZONA REGISTRAL Nº XII", sede: "SEDE REGISTRAL - AREQUIPA", foto: "arequipa" },
+    "CAMANA": { zona: "ZONA REGISTRAL Nº XII", sede: "SEDE REGISTRAL - CAMANA", foto: "camana" },
+    "CASTILLA APLAO": { zona: "ZONA REGISTRAL Nº XII", sede: "SEDE REGISTRAL - CASTILLA APLAO", foto: "castillaaplao" },
+    "ILO": { zona: "ZONA REGISTRAL Nº XII", sede: "SEDE REGISTRAL - ILO", foto: "ilo" },
+    "ISLAY MOLLENDO": { zona: "ZONA REGISTRAL Nº XII", sede: "SEDE REGISTRAL - ISLAY MOLLENDO", foto: "mollendo" },
+    "MOQUEGUA": { zona: "ZONA REGISTRAL Nº XII", sede: "SEDE REGISTRAL - MOQUEGUA", foto: "moquehua" },
+    "TACNA": { zona: "ZONA REGISTRAL Nº XII", sede: "SEDE REGISTRAL - TACNA", foto: "tacna" },
+    "PUNO": { zona: "ZONA REGISTRAL Nº XIII", sede: "SEDE REGISTRAL - PUNO", foto: "puno" },
+    "JULIACA": { zona: "ZONA REGISTRAL Nº XIII", sede: "SEDE REGISTRAL - JULIACA", foto: "juliaca" }
+};
+
+const textarea = document.getElementById('texto_datos');
+const inputDepto = document.getElementById('depto_input');
+const hiddenDepto = document.getElementById('depto_nombre');
+const btnPreview = document.getElementById('btn_preview');
+
+// --- LÓGICA UNIFICADA: LIMPIEZA Y DETECCIÓN DE SEDE ---
+
+function actualizarCabeceraSede(sedeDetectada) {
+    const infoSede = datosDeptos[sedeDetectada];
+    if (infoSede) {
+        let contenido = textarea.value;
+        
+        // 1. Limpiamos líneas antiguas para evitar duplicados
+        let lineasRestantes = contenido.split('\n').filter(l => 
+            !l.toLowerCase().startsWith('zona_registral:') && 
+            !l.toLowerCase().startsWith('sede:') && 
+            !l.toLowerCase().startsWith('foto:') &&
+            !l.toLowerCase().startsWith('sede_partida:') 
+        );
+
+        // 2. Insertamos la nueva cabecera con la sede actualizada
+        let cabecera = [
+            `zona_registral: ${infoSede.zona}`,
+            `sede: ${infoSede.sede}`,
+            `foto: ${infoSede.foto}`,
+            `sede_partida: ${sedeDetectada}`,
+            "" 
+        ];
+        
+        textarea.value = cabecera.join('\n') + lineasRestantes.join('\n').trim();
+        hiddenDepto.value = sedeDetectada;
+        btnPreview.disabled = false;
+    }
+}
+
+// Evento al seleccionar desde la lista desplegable (Arregla Cajamarca)
+inputDepto.addEventListener('change', function() {
+    const valor = this.value.trim().toUpperCase();
+    if (datosDeptos[valor]) {
+        actualizarCabeceraSede(valor);
+    }
+});
+
+// Evento al escribir o PEGAR (Limpia citas y detecta sede)
+textarea.addEventListener('input', function() {
+    let contenido = this.value;
+
+    // A. Limpieza automática de corchetes y contenido interno
+    const regexCitas = /\[[^\]]*\]/g;
+    if (regexCitas.test(contenido)) {
+        // Elimina los corchetes y quita espacios extra al final de la línea
+        contenido = contenido.replace(regexCitas, '').replace(/[ \t]+$/gm, '');
+        this.value = contenido;
+    }
+
+    // B. Detección automática de sede_partida si existe en el texto
+    const coincidencia = contenido.match(/sede_partida:\s*([^\n\r]+)/i);
+    if (coincidencia && coincidencia[1]) {
+        const sedeDetectada = coincidencia[1].trim().toUpperCase();
+        if (datosDeptos[sedeDetectada] && hiddenDepto.value !== sedeDetectada) {
+            inputDepto.value = sedeDetectada;
+            actualizarCabeceraSede(sedeDetectada);
+        }
+    }
+});
+
+// Evento al seleccionar desde la lista de arriba
+inputDepto.addEventListener('change', function() {
+    const valor = this.value.toUpperCase();
+    if (datosDeptos[valor]) {
+        actualizarCabeceraSede(valor);
+    }
+});
+
+// Evento al escribir o pegar manualmente en el cuadro de texto
+textarea.addEventListener('input', function() {
+    let contenido = this.value;
+
+    // --- NUEVO: Limpieza de citas ---
+    // Busca cualquier contenido entre corchetes y lo elimina
+    const regexCitas = /\[[^\]]*\]/g;
+    if (regexCitas.test(contenido)) {
+        // Reemplaza corchetes y quita espacios sobrantes al final de cada línea
+        contenido = contenido.replace(regexCitas, '').replace(/[ \t]+$/gm, '');
+        this.value = contenido; 
+    }
+    
+    // --- Lógica existente para detectar sede_partida ---
+    const coincidencia = contenido.match(/sede_partida:\s*([^\n\r]+)/i);
+    
+    if (coincidencia && coincidencia[1]) {
+        const sedeDetectada = coincidencia[1].trim().toUpperCase();
+        if (datosDeptos[sedeDetectada] && hiddenDepto.value !== sedeDetectada) {
+            inputDepto.value = sedeDetectada;
+            actualizarCabeceraSede(sedeDetectada);
+        }
+    }
+});
+
+
+function limpiarFormulario() {
+    textarea.value = ""; inputDepto.value = ""; hiddenDepto.value = "";
+    btnPreview.disabled = true; document.getElementById('g_cen').checked = true;
+    const preview = document.getElementById('preview_section'); if (preview) preview.style.display = 'none';
+}
+
+function topFunction() { window.scrollTo({top: 0, behavior: 'smooth'}); }
+window.onscroll = function() { 
+    let btn = document.getElementById("btnTop");
+    if (document.documentElement.scrollTop > 300) btn.style.display = "block"; else btn.style.display = "none";
+};
+
+function generarAleatorio(prefijo, totalDigitos) {
+    let r = prefijo;
+    for (let i = 0; i < (totalDigitos - prefijo.length); i++) r += Math.floor(Math.random() * 10);
+    return r;
+}
+
+function procesarGuionPlaca(texto) {
+    const pos = document.querySelector('input[name="pos_guion"]:checked').value;
+    let lineas = texto.split('\n');
+    for (let i = 0; i < lineas.length; i++) {
+        if (lineas[i].toLowerCase().startsWith('placa:')) {
+            let valorPlaca = lineas[i].split(':')[1].trim().replace(/-/g, ''); 
+            let placaConGuion = valorPlaca;
+            if (pos === 'izq' && valorPlaca.length >= 2) placaConGuion = valorPlaca.substring(0, 2) + '-' + valorPlaca.substring(2);
+            else if (pos === 'cen' && valorPlaca.length >= 3) placaConGuion = valorPlaca.substring(0, 3) + '-' + valorPlaca.substring(3);
+            else if (pos === 'der' && valorPlaca.length >= 4) placaConGuion = valorPlaca.substring(0, 4) + '-' + valorPlaca.substring(4);
+            lineas[i] = `placa: ${placaConGuion}`;
+            break;
+        }
+    }
+    return lineas.join('\n');
+}
+
+// Función para mostrar u ocultar los formularios a la derecha
+function toggleAzura() {
+    const seleccion = document.querySelector('input[name="edit_az"]:checked').value;
+    const esSi = (seleccion === 'SI');
+    
+    // Solo mostramos los inputs de texto, ya no el Drop Zone
+    document.getElementById('row_azura').style.display = esSi ? 'flex' : 'none';
+}
+
+// Variable global fuera de la función
+let procesandoDescarga = false;
+
+function actualizarDatosYEnviar(action, event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    if (procesandoDescarga) return false;
+
+    const form = document.getElementById('mainForm');
+    const btnDescargar = document.getElementById('btnDescargar');
+    const textarea = document.getElementById('texto_datos');
+
+    // Procesar texto (limpieza de guiones y etiquetas)
+    let contenido = textarea.value;
+    contenido = procesarGuionPlaca(contenido);
+    const etiquetas = ["PLACA:", "PROPIETARIO:", "NRO. SERIE:", "NRO. MOTOR:", "COLOR:", "MARCA/MODELO:"];
+    etiquetas.forEach(et => {
+        if (!contenido.toUpperCase().includes(et)) {
+            contenido = et + " \n" + contenido;
+        }
+    });
+    textarea.value = contenido.trim();
+
+    if (action === 'download') {
+        // ACTIVAR BLOQUEO
+        procesandoDescarga = true;
+        btnDescargar.disabled = true;
+        btnDescargar.style.opacity = "0.5";
+        btnDescargar.innerHTML = "<span>⌛ Procesando...</span>";
+
+        form.action = '/descargar';
+        form.submit();
+
+        // Liberar el botón después de 8 segundos (tiempo suficiente para la subida)
+        setTimeout(() => {
+            procesandoDescarga = false;
+            btnDescargar.disabled = false;
+            btnDescargar.style.opacity = "1";
+            btnDescargar.innerHTML = "📥 Descargar PDF";
+        }, 8000);
+
+    } else {
+        // Para la Vista Previa no bloqueamos
+        form.action = '/';
+        form.submit();
+    }
+    
+    return false;
+}
+//-------------------------------
+window.onload = function() { 
+    if (inputDepto.value && datosDeptos[inputDepto.value.toUpperCase()]) btnPreview.disabled = false;
+    toggleAzura(); // Ejecuta la lógica al cargar para sincronizar el estado inicial
+};
+
+/// --- LÓGICA DE ARRASTRAR Y SOLTAR PDF CORREGIDA ---
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('pdf_file');
+const fileNameDisplay = document.getElementById('file-name');
+
+// Abrir selector SOLO cuando se hace clic en el contenedor principal
+dropZone.addEventListener('click', (e) => {
+    // Evitamos que si hay algún elemento interno con eventos, se duplique
+    if (e.target !== fileInput) {
+        fileInput.click();
+    }
+});
+
+// Mostrar el nombre del archivo cuando se selecciona
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+        fileNameDisplay.textContent = "✅ Archivo cargado: " + fileInput.files[0].name;
+        dropZone.style.background = "#e6fffa";
+        dropZone.style.borderColor = "#34a853";
+    }
+});
+
+// Prevenir comportamiento por defecto en arrastre
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    }, false);
+});
+
+// Efectos visuales al arrastrar
+dropZone.addEventListener('dragover', () => {
+    dropZone.style.background = "#d2e3fc";
+    dropZone.style.borderColor = "#174ea6";
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.style.background = "#e8f0fe";
+    dropZone.style.borderColor = "#1a73e8";
+});
+
+// Acción al soltar el archivo
+dropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length > 0 && files[0].type === "application/pdf") {
+        fileInput.files = files; // Asigna el archivo al input
+        fileNameDisplay.textContent = "✅ Archivo soltado: " + files[0].name;
+        dropZone.style.background = "#e6fffa";
+        dropZone.style.borderColor = "#34a853";
+    } else {
+        alert("Por favor, suelta solo archivos PDF.");
+    }
+});
+
+
+</script>
+</body>
+</html>

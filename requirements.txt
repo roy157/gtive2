@@ -1,0 +1,8 @@
+Flask
+Pillow
+gunicorn
+PyMuPDF
+supabase
+qrcode[pil]
+numpy
+qreader
